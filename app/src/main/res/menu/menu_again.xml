@@ -7,4 +7,18 @@
     android:orderInCategory="100"
     app:showAsAction="never"
     />
+
+    <item
+        android:id="@+id/chooseWhite"
+        android:title="选择白子"
+        android:orderInCategory="100"
+        app:showAsAction="never"
+        />
+
+    <item
+        android:id="@+id/chooseBlack"
+        android:title="选择黑子"
+        android:orderInCategory="100"
+        app:showAsAction="never"
+        />
 </menu>

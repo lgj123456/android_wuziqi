@@ -9,12 +9,18 @@ import android.graphics.Point;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import cn.bmob.v3.BmobQuery;
+import cn.bmob.v3.exception.BmobException;
+import cn.bmob.v3.listener.QueryListener;
+import cn.bmob.v3.listener.UpdateListener;
 
 /**
  * Created by yhdj on 2017/6/8.
@@ -38,11 +44,35 @@ public class WuziqiPanel extends View {
     private static final String INSTANCE_GAME_OVER = "instance_game_over";
     private static final String INSTANCE_WHITE_ARRAY = "instance_white_array";
     private static final String INSTANCE_BLACK_ARRAY = "instance_black_array";
+    private String objectId;
+    private boolean isBegin;
+    private Match mMatch = new Match();
+    private boolean isChooseWhite;
 
     public WuziqiPanel(Context context, AttributeSet attrs) {
         super(context, attrs);
-       // setBackgroundColor(0x33ff0000);
+        // setBackgroundColor(0x33ff0000);
         init();
+        //  queryMatch();
+    }
+
+    private void queryMatch() {
+        BmobQuery<Match> query = new BmobQuery<Match>();
+        query.getObject(objectId, new QueryListener<Match>() {
+
+            @Override
+            public void done(Match object, BmobException e) {
+                if (e == null) {
+                    mMatch.setObjectId(object.getObjectId());
+                    mMatch.setRoomName(object.getRoomName());
+                    mMatch.setUsername(object.getUsername());
+                    mMatch.setBegin(object.isBegin());
+                } else {
+                    Log.i("bmob", "失败：" + e.getMessage() + "," + e.getErrorCode());
+                }
+            }
+
+        });
     }
 
     private void init() {
@@ -102,6 +132,14 @@ public class WuziqiPanel extends View {
             mIsGameOver = true;
             mIsWhiteWinner = whiteWin;
             String text = mIsWhiteWinner ? "白棋胜利" : "黑棋胜利";
+            if (mIsWhiteWinner){
+                mMatch.setState(1);
+            }else{
+                mMatch.setState(2);
+            }
+
+            mMatch.update(objectId,null);
+
             Toast.makeText(getContext(), text, Toast.LENGTH_SHORT).show();
         }
     }
@@ -273,14 +311,42 @@ public class WuziqiPanel extends View {
             if (mWhiteArray.contains(p) || mBlackArray.contains(p)) {
                 return false;
             }
-            if (mIsWhite) {
+            if (mIsWhite && isChooseWhite) {
                 mWhiteArray.add(p);
+                mMatch.setWhiteArray(mWhiteArray);
+                Toast.makeText(getContext(), "UpdateListener2222" + objectId, Toast.LENGTH_SHORT).show();
+                mMatch.update(objectId, new UpdateListener() {
+                    @Override
+                    public void done(BmobException e) {
+                        if(e == null){
+                            Log.e("aaaaaaaaa", "done:222 " + "success" );
+                        }else{
+                            Log.e("aaaaaa", "done:2222 " + "error");
+                        }
+
+                    }
+                });
+                Toast.makeText(getContext(), "setWhiteArray objectId" + objectId, Toast.LENGTH_SHORT).show();
+
             } else {
                 mBlackArray.add(p);
+                mMatch.setBlackArray(mBlackArray);
+                Toast.makeText(getContext(), "UpdateListener33333" + objectId, Toast.LENGTH_SHORT).show();
+                mMatch.update(objectId, new UpdateListener() {
+                    @Override
+                    public void done(BmobException e) {
+                        if(e == null){
+                            Log.e("aaaaaaaaa", "done:3333 " + "success" );
+                        }else{
+                            Log.e("aaaaaa", "done:3333 " + "error");
+                        }
+
+                    }
+                });
             }
 
             invalidate();
-            mIsWhite = !mIsWhite;
+            // mIsWhite = !mIsWhite;
 
         }
         return true;
@@ -315,10 +381,40 @@ public class WuziqiPanel extends View {
     }
 
 
-    public void start(){
+    public void start() {
         mWhiteArray.clear();
         mBlackArray.clear();
+        mMatch.setWhiteArray(mWhiteArray);
+        mMatch.setBlackArray(mBlackArray);
+        mMatch.update(objectId,null);
         mIsGameOver = false;
         mIsWhiteWinner = false;
+        invalidate();
+    }
+
+    public void sendMatchData(String objectId) {
+        this.objectId = objectId;
+        Toast.makeText(getContext(), "id = " + objectId, Toast.LENGTH_SHORT).show();
+    }
+
+    public void sendIsChooseWhite(boolean isChooseWhite) {
+        this.isChooseWhite = isChooseWhite;
+        Toast.makeText(getContext(), "isChooseWhite" + isChooseWhite, Toast.LENGTH_SHORT).show();
+    }
+
+    public void refreshPieces(ArrayList<Point> whiteArray, ArrayList<Point> blackArray) {
+        this.mWhiteArray = whiteArray;
+        this.mBlackArray = blackArray;
+        invalidate();
+    }
+
+    public void checkWin(int state) {
+        if(1 == state){
+            Toast.makeText(getContext(), "白棋胜利", Toast.LENGTH_SHORT).show();
+            mIsGameOver = true;
+        }else if (2 == state){
+            Toast.makeText(getContext(), "黑棋胜利", Toast.LENGTH_SHORT).show();
+            mIsGameOver = true;
+        }
     }
 }
